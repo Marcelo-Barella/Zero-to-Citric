@@ -1,0 +1,98 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CI_NO_DOCKER: "1"
+
+jobs:
+  bot:
+    name: bot (apps/bot + packages)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build packages
+        run: |
+          pnpm --filter "@zero-to-citric/persona" build
+          pnpm --filter "@zero-to-citric/shared-types" build
+          pnpm --filter "@zero-to-citric/tools-contract" build
+      - name: Typecheck (bot + packages)
+        run: |
+          pnpm --filter "@zero-to-citric/persona" typecheck
+          pnpm --filter "@zero-to-citric/shared-types" typecheck
+          pnpm --filter "@zero-to-citric/tools-contract" typecheck
+          pnpm --filter "@zero-to-citric/bot" typecheck
+      - name: Test (bot + packages)
+        run: |
+          pnpm --filter "@zero-to-citric/persona" test
+          pnpm --filter "@zero-to-citric/shared-types" test
+          pnpm --filter "@zero-to-citric/tools-contract" test
+          pnpm --filter "@zero-to-citric/bot" test
+      - name: Build bot (Next.js)
+        env:
+          API_KEY: ci
+          AI_GATEWAY_API_KEY: ci
+          LLM_MODEL: anthropic/claude-sonnet-4.6
+        run: pnpm --filter "@zero-to-citric/bot" build
+
+  worker:
+    name: worker (apps/voice-worker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build packages
+        run: pnpm --filter "@zero-to-citric/shared-types" build
+      - name: Typecheck worker
+        run: pnpm --filter "@zero-to-citric/voice-worker" typecheck
+      - name: Test worker
+        run: pnpm --filter "@zero-to-citric/voice-worker" test
+      - name: Build worker
+        run: pnpm --filter "@zero-to-citric/voice-worker" build
+
+  smoke:
+    name: smoke harness
+    runs-on: ubuntu-latest
+    needs: [bot]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build packages
+        run: |
+          pnpm --filter "@zero-to-citric/persona" build
+          pnpm --filter "@zero-to-citric/shared-types" build
+          pnpm --filter "@zero-to-citric/tools-contract" build
+      - name: Smoke
+        run: pnpm test:smoke
