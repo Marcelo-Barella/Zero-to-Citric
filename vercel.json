@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/api/discord/gateway", "schedule": "*/9 * * * *" },
+    { "path": "/api/cron/memory-prune", "schedule": "0 4 * * *" }
+  ]
+}

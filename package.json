@@ -1,0 +1,32 @@
+{
+  "name": "zero-to-citric",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "dev": "turbo run dev",
+    "test:smoke": "pnpm --filter \"@zero-to-citric/bot\" exec tsx scripts/smoke.ts",
+    "check-env": "pnpm --filter \"@zero-to-citric/bot\" exec tsx scripts/check-env.ts",
+    "init-db": "pnpm --filter \"@zero-to-citric/bot\" exec tsx scripts/init-db.ts"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.2",
+    "@types/node": "^22.10.0",
+    "vitest": "^2.1.8",
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.2",
+    "@zero-to-citric/persona": "workspace:*",
+    "@zero-to-citric/tools-contract": "workspace:*",
+    "@zero-to-citric/shared-types": "workspace:*"
+  }
+}

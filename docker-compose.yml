@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tangerina
+      POSTGRES_PASSWORD: tangerina
+      POSTGRES_DB: tangerina
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tangerina"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  voice-worker:
+    build:
+      context: .
+      dockerfile: apps/voice-worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: "8787"
+      LOG_LEVEL: info
+      WORKER_SHARED_SECRET: dev-secret
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN:-}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      ELEVEN_API_KEY: ${ELEVEN_API_KEY:-}
+      ELEVEN_VOICE_ID: ${ELEVEN_VOICE_ID:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ZHIPU_API_KEY: ${ZHIPU_API_KEY:-}
+      WHISPER_PROVIDER: ${WHISPER_PROVIDER:-zhipu}
+      TTS_PROVIDER: ${TTS_PROVIDER:-elevenlabs}
+    ports:
+      - "8787:8787"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
